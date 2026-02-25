@@ -2,8 +2,7 @@
 
 This directory contains a complete Xcode project for the VlessClient macOS app.
 
-<img src="VlessClient/Assets.xcassets/image/top.png" width="200" />
-<img src="VlessClient/Assets.xcassets/image/main.png" width="500" />
+<img src="VlessClient/Assets.xcassets/image/top.png" width="200" /> <img src="VlessClient/Assets.xcassets/image/main.png" width="500" />
 
 ## Setup Instructions
 
