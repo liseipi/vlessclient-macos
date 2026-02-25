@@ -774,42 +774,165 @@ struct MenuBarView: View {
     @Environment(\.appDelegate) var appDelegate
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(lm.t(.appName)).font(.headline).padding(.bottom, 4)
+        VStack(spacing: 0) {
+            // ── 顶部状态区域 ──────────────────────────────────────────────
+            VStack(spacing: 10) {
+                // 标题栏
+                HStack(spacing: 8) {
+                    Image(systemName: proxyVM.isRunning ? "shield.fill" : "shield.slash")
+                        .font(.title2)
+                        .foregroundStyle(proxyVM.isRunning ? .green : .secondary)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(lm.t(.appName))
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                        Text(proxyVM.isRunning ? lm.t(.statusRunning) : lm.t(.statusStopped))
+                            .font(.caption)
+                            .foregroundStyle(proxyVM.isRunning ? .green : .secondary)
+                    }
+                    Spacer()
+                }
+                
+                // 当前配置信息卡片
+                if let cfg = configManager.activeConfig {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(cfg.name)
+                                .font(.caption.bold())
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Text(lm.t(.badgeActive))
+                                .font(.system(size: 9, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.15))
+                                .foregroundStyle(.green)
+                                .clipShape(Capsule())
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "server.rack")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text("\(cfg.server):\(cfg.port)")
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "port")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text("\(lm.t(.labelSocks5)) / \(lm.t(.labelHTTP))")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text("127.0.0.1:\(cfg.listenPort)")
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.blue)
+                        }
+                        
+                        if proxyVM.connectionCount > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "network")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text(lm.t(.statusConnections(proxyVM.connectionCount)))
+                                    .font(.caption2)
+                                    .foregroundStyle(.blue)
+                            }
+                        }
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .cornerRadius(8)
+                }
+            }
+            .padding(12)
+            
             Divider()
-
-            if let cfg = configManager.activeConfig {
-                Text(cfg.name).font(.caption).foregroundStyle(.secondary)
+            
+            // ── 操作按钮区域 ──────────────────────────────────────────────
+            VStack(spacing: 2) {
+                MenuButton(
+                    icon: proxyVM.isRunning ? "stop.circle.fill" : "play.circle.fill",
+                    title: proxyVM.isRunning ? lm.t(.menuStopProxy) : lm.t(.menuStartProxy),
+                    iconColor: proxyVM.isRunning ? .red : .green
+                ) {
+                    proxyVM.toggle()
+                }
+                
+                MenuButton(
+                    icon: "gearshape",
+                    title: lm.t(.menuSettings)
+                ) {
+                    appDelegate?.showMainWindow()
+                }
+                
+                Divider()
+                    .padding(.vertical, 4)
+                
+                MenuButton(
+                    icon: "globe",
+                    title: "\(lm.language.flag) \(lm.language.displayName)"
+                ) {
+                    lm.toggle()
+                }
+                
+                Divider()
+                    .padding(.vertical, 4)
+                
+                MenuButton(
+                    icon: "power",
+                    title: lm.t(.menuQuit),
+                    iconColor: .red
+                ) {
+                    proxyVM.stop()
+                    NSApp.terminate(nil)
+                }
             }
-
-            Text(proxyVM.statusMessage)
-                .font(.caption)
-                .foregroundStyle(proxyVM.isRunning ? .green : .red)
-
-            Divider()
-
-            Button(proxyVM.isRunning ? lm.t(.menuStopProxy) : lm.t(.menuStartProxy)) {
-                proxyVM.toggle()
-            }
-
-            // ✅ 使用 AppDelegate 显示窗口
-            Button(lm.t(.menuSettings)) {
-                appDelegate?.showMainWindow()
-            }
-
-            // 语言切换
-            Divider()
-            Button("\(lm.language.flag) \(lm.language.displayName)") {
-                lm.toggle()
-            }
-
-            Divider()
-            Button(lm.t(.menuQuit)) {
-                proxyVM.stop()
-                NSApp.terminate(nil)
-            }
+            .padding(.vertical, 4)
         }
-        .padding(8)
-        .frame(width: 200)
+        .frame(width: 260)
+    }
+}
+
+// MARK: - Menu Button Component
+
+struct MenuButton: View {
+    let icon: String
+    let title: String
+    var iconColor: Color = .primary
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(iconColor)
+                    .frame(width: 18, alignment: .center)
+                
+                Text(title)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.primary)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+            .background(
+                isHovered
+                    ? Color(nsColor: .controlBackgroundColor)
+                    : Color.clear
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            isHovered = hovering
+        }
     }
 }
