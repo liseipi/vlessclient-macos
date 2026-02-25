@@ -90,6 +90,7 @@ struct VlessClientApp: App {
                 .environmentObject(langManager)
                 .environment(\.appDelegate, appDelegate)
         }
+        .menuBarExtraStyle(.window)   // ←←← 加上这一行就行了！
         #endif
     }
 }
@@ -775,158 +776,138 @@ struct MenuBarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // ── 顶部状态区域 ──────────────────────────────────────────────
-            VStack(spacing: 10) {
-                // 标题栏
-                HStack(spacing: 8) {
+            // 顶部信息区（更紧凑）
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
                     Image(systemName: proxyVM.isRunning ? "shield.fill" : "shield.slash")
-                        .font(.title2)
+                        .font(.system(size: 24))
                         .foregroundStyle(proxyVM.isRunning ? .green : .secondary)
                     
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 1) {
                         Text(lm.t(.appName))
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .font(.system(size: 15, weight: .medium))
                         Text(proxyVM.isRunning ? lm.t(.statusRunning) : lm.t(.statusStopped))
-                            .font(.caption)
-                            .foregroundStyle(proxyVM.isRunning ? .green : .secondary)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
                     }
                     Spacer()
                 }
                 
-                // 当前配置信息卡片
+                Divider()
+                
+                // 配置信息 - 真正左右并排
                 if let cfg = configManager.activeConfig {
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text(cfg.name)
-                                .font(.caption.bold())
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Text(lm.t(.badgeActive))
-                                .font(.system(size: 9, weight: .bold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.green.opacity(0.15))
-                                .foregroundStyle(.green)
-                                .clipShape(Capsule())
-                        }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(cfg.name)
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                         
-                        HStack(spacing: 4) {
-                            Image(systemName: "server.rack")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text("\(cfg.server):\(cfg.port)")
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: "port")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text("\(lm.t(.labelSocks5)) / \(lm.t(.labelHTTP))")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text("127.0.0.1:\(cfg.listenPort)")
-                                .font(.caption2.monospaced())
-                                .foregroundStyle(.blue)
-                        }
-                        
-                        if proxyVM.connectionCount > 0 {
-                            HStack(spacing: 4) {
-                                Image(systemName: "network")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                Text(lm.t(.statusConnections(proxyVM.connectionCount)))
-                                    .font(.caption2)
-                                    .foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 8) {
+                            // 左侧：服务器
+                            VStack(alignment: .leading, spacing: 4) {
+                                Label {
+                                    Text("\(cfg.server):\(cfg.port)")
+                                        .font(.system(size: 13, design: .monospaced))
+                                        .foregroundStyle(.secondary)
+                                } icon: {
+                                    Image(systemName: "server.rack")
+                                        .foregroundStyle(.secondary)
+                                }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            // 右侧：本地代理（蓝色突出）
+                            VStack(alignment: .leading, spacing: 4) {
+                                Label {
+                                    Text("127.0.0.1:\(String(cfg.listenPort))")
+                                        .font(.system(size: 13, design: .monospaced))
+                                        .foregroundStyle(.blue)
+                                } icon: {
+                                    Image(systemName: "network")
+                                        .foregroundStyle(.blue.opacity(0.9))
+                                }
+                                
+                                Text("SOCKS5 / HTTP")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(nsColor: .controlBackgroundColor))
-                    .cornerRadius(8)
                 }
             }
-            .padding(12)
+            .padding(16)
             
             Divider()
             
-            // ── 操作按钮区域 ──────────────────────────────────────────────
-            VStack(spacing: 2) {
-                MenuButton(
+            // 操作按钮区
+            VStack(spacing: 0) {
+                SimpleMenuButton(
                     icon: proxyVM.isRunning ? "stop.circle.fill" : "play.circle.fill",
                     title: proxyVM.isRunning ? lm.t(.menuStopProxy) : lm.t(.menuStartProxy),
                     iconColor: proxyVM.isRunning ? .red : .green
-                ) {
-                    proxyVM.toggle()
-                }
+                ) { proxyVM.toggle() }
                 
-                MenuButton(
-                    icon: "gearshape",
-                    title: lm.t(.menuSettings)
-                ) {
+                SimpleMenuButton(icon: "gearshape", title: lm.t(.menuSettings)) {
                     appDelegate?.showMainWindow()
                 }
                 
-                Divider()
-                    .padding(.vertical, 4)
+                Divider().padding(.horizontal, 16)
                 
-                MenuButton(
-                    icon: "globe",
-                    title: "\(lm.language.flag) \(lm.language.displayName)"
-                ) {
+                SimpleMenuButton(icon: "globe", title: "\(lm.language.flag) \(lm.language.displayName)") {
                     lm.toggle()
                 }
                 
-                Divider()
-                    .padding(.vertical, 4)
+                Divider().padding(.horizontal, 16)
                 
-                MenuButton(
+                SimpleMenuButton(
                     icon: "power",
                     title: lm.t(.menuQuit),
-                    iconColor: .red
+                    iconColor: .red,
+                    titleColor: .red
                 ) {
                     proxyVM.stop()
                     NSApp.terminate(nil)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 8)
         }
         .frame(width: 260)
     }
 }
 
-// MARK: - Menu Button Component
+// MARK: - Simple Menu Button Component
 
-struct MenuButton: View {
+struct SimpleMenuButton: View {
     let icon: String
     let title: String
     var iconColor: Color = .primary
+    var titleColor: Color = .primary
     let action: () -> Void
     
     @State private var isHovered = false
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 15))
                     .foregroundStyle(iconColor)
-                    .frame(width: 18, alignment: .center)
+                    .frame(width: 20, alignment: .center)
                 
                 Text(title)
                     .font(.system(size: 13))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(titleColor)
                 
                 Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             .contentShape(Rectangle())
             .background(
                 isHovered
-                    ? Color(nsColor: .controlBackgroundColor)
+                    ? Color(nsColor: .controlBackgroundColor).opacity(0.5)
                     : Color.clear
             )
         }
