@@ -76,6 +76,11 @@ enum L10n {
     case labelSocks5
     case labelHTTP
 
+    // Settings
+    case sectionSettings
+    case settingsLaunchAtLogin
+    case settingsLaunchAtLoginDesc
+
     // Config List
     case configListTitle
     case btnImportURI
@@ -172,6 +177,10 @@ enum L10n {
         case .labelSocks5:              return "SOCKS5"
         case .labelHTTP:                return "HTTP"
 
+        case .sectionSettings:          return "Settings"
+        case .settingsLaunchAtLogin:    return "Launch at Login"
+        case .settingsLaunchAtLoginDesc: return "Start VlessClient automatically when you log in (won't auto-connect)"
+
         case .configListTitle:          return "Configurations"
         case .btnImportURI:             return "Import URI"
         case .btnAdd:                   return "Add"
@@ -254,6 +263,10 @@ enum L10n {
         case .labelSNI:                 return "SNI"
         case .labelSocks5:              return "SOCKS5"
         case .labelHTTP:                return "HTTP"
+
+        case .sectionSettings:          return "设置"
+        case .settingsLaunchAtLogin:    return "开机自启动"
+        case .settingsLaunchAtLoginDesc: return "登录时自动启动应用（不会自动连接代理）"
 
         case .configListTitle:          return "配置列表"
         case .btnImportURI:             return "导入链接"

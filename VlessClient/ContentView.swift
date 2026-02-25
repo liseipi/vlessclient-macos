@@ -11,7 +11,7 @@ struct VlessClientApp: App {
     @StateObject private var langManager    = LanguageManager.shared
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             ContentView()
                 .environmentObject(configManager)
                 .environmentObject(logger)
@@ -24,6 +24,8 @@ struct VlessClientApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .defaultSize(width: 800, height: 600)
+        // ✅ 阻止窗口被完全销毁
+        .defaultPosition(.center)
 
         #if os(macOS)
         MenuBarExtra("VlessClient", systemImage: proxyViewModel.isRunning ? "shield.fill" : "shield") {
@@ -236,6 +238,29 @@ struct DashboardView: View {
                     .padding(8)
                 } label: {
                     Label(lm.t(.sectionStatus), systemImage: "info.circle")
+                }
+
+                // ✅ 新增：应用设置
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle(isOn: $configManager.launchAtLogin) {
+                            HStack {
+                                Image(systemName: "power")
+                                    .foregroundStyle(.blue)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(lm.t(.settingsLaunchAtLogin))
+                                        .font(.subheadline.bold())
+                                    Text(lm.t(.settingsLaunchAtLoginDesc))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                        .toggleStyle(.switch)
+                    }
+                    .padding(8)
+                } label: {
+                    Label(lm.t(.sectionSettings), systemImage: "gearshape")
                 }
 
                 // ── 当前配置 ──────────────────────────────────────────────
@@ -688,9 +713,9 @@ struct MenuBarView: View {
                 proxyVM.toggle()
             }
 
+            // ✅ 修复：使用正确的方式打开主窗口
             Button(lm.t(.menuSettings)) {
-                NSApp.activate(ignoringOtherApps: true)
-                NSApp.windows.first?.makeKeyAndOrderFront(nil)
+                activateMainWindow()
             }
 
             // 语言切换
@@ -707,5 +732,46 @@ struct MenuBarView: View {
         }
         .padding(8)
         .frame(width: 200)
+    }
+    
+    // ✅ 正确打开主窗口的方法
+    private func activateMainWindow() {
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            
+            // 查找主窗口（排除 StatusBar 和 Panel）
+            let mainWindow = NSApp.windows.first { window in
+                let className = NSStringFromClass(type(of: window))
+                return !className.contains("StatusBar") &&
+                       !className.contains("Panel") &&
+                       window.canBecomeKey
+            }
+            
+            if let window = mainWindow {
+                // 找到窗口，显示它
+                if window.isMiniaturized {
+                    window.deminiaturize(nil)
+                }
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+            } else {
+                // 没有找到窗口，通过 AppleScript 创建新窗口
+                let script = """
+                tell application "System Events"
+                    tell process "VlessClient"
+                        set frontmost to true
+                        if (count of windows) > 0 then
+                            perform action "AXRaise" of window 1
+                        end if
+                    end tell
+                end tell
+                """
+                
+                if let appleScript = NSAppleScript(source: script) {
+                    var error: NSDictionary?
+                    appleScript.executeAndReturnError(&error)
+                }
+            }
+        }
     }
 }
