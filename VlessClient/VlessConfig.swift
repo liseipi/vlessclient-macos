@@ -16,13 +16,13 @@ struct VlessConfig: Codable, Identifiable {
     
     static var defaultConfig: VlessConfig {
         VlessConfig(
-            name: "vs.musicses.vip",
-            server: "vs.musicses.vip",
+            name: "broad.aicms.dpdns.org",
+            server: "broad.aicms.dpdns.org",
             port: 443,
             uuid: "55a95ae1-4ae8-4461-8484-457279821b40",
             path: "/?ed=2560",
-            sni: "vs.musicses.vip",
-            wsHost: "vs.musicses.vip",
+            sni: "broad.aicms.dpdns.org",
+            wsHost: "broad.aicms.dpdns.org",
             listenPort: 1088,
             rejectUnauthorized: false,
             security: "none",
